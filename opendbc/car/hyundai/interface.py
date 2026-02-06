@@ -43,8 +43,10 @@ class CarInterface(CarInterfaceBase):
     if ret.flags & HyundaiFlags.CANFD:
       # Shared configuration for CAN-FD cars
       ret.alphaLongitudinalAvailable = candidate not in CANFD_UNSUPPORTED_LONGITUDINAL_CAR
-      if lka_steering and Ecu.adas not in [fw.ecu for fw in car_fw]:
-        # this needs to be figured out for cars without an ADAS ECU
+      has_adas_ecu = Ecu.adas in {fw.ecu for fw in car_fw}
+      if lka_steering and not has_adas_ecu and not (ret.flags & HyundaiFlags.RADAR_SCC):
+        # LKA-steering platforms typically use ADAS ECU for longitudinal.
+        # RADAR_SCC variants can still run long with radar ECU and no ADAS ECU.
         ret.alphaLongitudinalAvailable = False
 
       ret.enableBsm = 0x1e5 in fingerprint[CAN.ECAN]
@@ -236,7 +238,7 @@ class CarInterface(CarInterfaceBase):
     if CP.openpilotLongitudinalControl and not ((CP.flags & (HyundaiFlags.CANFD_CAMERA_SCC | HyundaiFlags.CAMERA_SCC)) or
                                                 (CP_SP.flags & HyundaiFlagsSP.ENHANCED_SCC)):
       addr, bus = 0x7d0, CanBus(CP).ECAN if CP.flags & HyundaiFlags.CANFD else 0
-      if CP.flags & HyundaiFlags.CANFD_LKA_STEERING.value:
+      if CP.flags & HyundaiFlags.CANFD_LKA_STEERING.value and not (CP.flags & HyundaiFlags.RADAR_SCC.value):
         addr, bus = 0x730, CanBus(CP).ECAN
       disable_ecu(can_recv, can_send, bus=bus, addr=addr, com_cont_req=communication_control)
 

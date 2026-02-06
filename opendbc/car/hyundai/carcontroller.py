@@ -109,7 +109,7 @@ class CarController(CarControllerBase, EsccCarController, LeadDataCarController,
             self.CP.openpilotLongitudinalControl:
       # for longitudinal control, either radar or ADAS driving ECU
       addr, bus = 0x7d0, self.CAN.ECAN if self.CP.flags & HyundaiFlags.CANFD else 0
-      if self.CP.flags & HyundaiFlags.CANFD_LKA_STEERING.value:
+      if self.CP.flags & HyundaiFlags.CANFD_LKA_STEERING.value and not (self.CP.flags & HyundaiFlags.RADAR_SCC.value):
         addr, bus = 0x730, self.CAN.ECAN
       can_sends.append(make_tester_present_msg(addr, bus, suppress_response=True))
 

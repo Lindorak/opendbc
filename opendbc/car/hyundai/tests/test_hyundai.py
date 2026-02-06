@@ -63,6 +63,33 @@ class TestHyundaiFingerprint:
       CP = CarInterface.get_params(CAR.HYUNDAI_SONATA, fingerprint, [], False, False, False)
       assert CP.radarUnavailable != radar
 
+  def test_canfd_longitudinal_adas_gating(self):
+    # LKA steering without ADAS ECU should still allow alpha long on RADAR_SCC platforms.
+    fingerprint = gen_empty_fingerprint()
+    cam_can = CanBus(None, fingerprint).CAM
+    fingerprint[cam_can][0x50] = 8
+
+    cp_gv70_no_adas = CarInterface.get_params(
+      CAR.GENESIS_GV70_1ST_GEN,
+      fingerprint,
+      [CarParams.CarFw(ecu=Ecu.fwdRadar, address=0x7d0)],
+      False,
+      False,
+      False,
+    )
+    assert cp_gv70_no_adas.alphaLongitudinalAvailable
+
+    # Non-RADAR_SCC LKA-steering CANFD cars remain gated without ADAS ECU.
+    cp_ev6_no_adas = CarInterface.get_params(
+      CAR.KIA_EV6,
+      fingerprint,
+      [CarParams.CarFw(ecu=Ecu.fwdRadar, address=0x7d0)],
+      False,
+      False,
+      False,
+    )
+    assert not cp_ev6_no_adas.alphaLongitudinalAvailable
+
   def test_alternate_limits(self):
     # Alternate lateral control limits, for high torque cars, verify Panda safety mode flag is set
     fingerprint = gen_empty_fingerprint()
